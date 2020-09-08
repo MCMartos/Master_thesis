@@ -26,15 +26,18 @@ READS=$3
 
 mkdir ART_SIMULATION
 mkdir ${OUT}/ART_SIMULATION/ART_FILES
-art_illumina -ss MSv1 -na -i ${SIM_FILE} -p -l 150 -f ${COVERAGE} -m 152 -s 10 -o ${OUT}/ART_SIMULATION/ART_FILES/$(basename ${SIM_FILE%.*})
+art_illumina -ss MSv1 -na -i ${SIM_FILE} -p -l 150 -f ${COVERAGE} -m 152 -s 10 -o ${OUT}/ART_SIMULATION/ART_FILES/1-$(basename ${SIM_FILE%.*})
 
 mkdir ISS_SIMULATION
 mkdir ${OUT}/ISS_SIMULATION/SINGLE_FASTA
 mkdir ${OUT}/ISS_SIMULATION/ISS_FILES
 python3 multifasta_converter.py -N 150 -o ${PWD}/ISS_SIMULATION/SINGLE_FASTA/$(basename ${SIM_FILE}) -f ${SIM_FILE}
-iss generate -p 12 -g ${OUT}/ISS_SIMULATION/SINGLE_FASTA/$(basename ${SIM_FILE}) -n ${READS} -m novaseq -o ${OUT}/ISS_SIMULATION/ISS_FILES/$(basename ${SIM_FILE%.*})
+iss generate -p 12 -g ${OUT}/ISS_SIMULATION/SINGLE_FASTA/$(basename ${SIM_FILE}) -n ${READS} -m miseq -o ${OUT}/ISS_SIMULATION/ISS_FILES/$(basename ${SIM_FILE%.*})
+python3 trim.py --input ${OUT}/ISS_SIMULATION/ISS_FILES/$(basename ${SIM_FILE%.*})_R1.fastq --output ${OUT}/ISS_SIMULATION/ISS_FILES/1-$(basename ${SIM_FILE%.*})_R1.fastq --operation trim --trim-left 1 --trim-right 151
 
 wait
+
+rm ${OUT}/ISS_SIMULATION/ISS_FILES/$(basename ${SIM_FILE%.*})
 
 ############################################################################################################################################################
 # CHECK QUALITIES
@@ -44,7 +47,7 @@ wait
 #mkdir ./LIBRARIES_FASTQC
 
 #${FASTQC} 01_ISS_REF/*.fastq
-#mv ./01_ISS_REF/*.fastqc* ./REF_FASTQC/
+#mv ./01_ISS_REF/*.fastqc* ./LIBRARIES_FASTQC/
 
 ############################################################################################################################################################
 # FILTER SAMPLE DATA
@@ -56,7 +59,7 @@ wait
 ##Make ART_TRIM directory
 mkdir ${OUT}/ART_SIMULATION/02_ART_TRIM
 
-NAME=$(basename ${SIM_FILE%.*})
+NAME=1-$(basename ${SIM_FILE%.*})
 RUN1=${OUT}/ART_SIMULATION/ART_FILES/${NAME}1.fq
 ##Call trimmomatic
 java -jar ${TRIMMOMATIC} SE -threads 12 -phred33 ${RUN1} ${OUT}/ART_SIMULATION/02_ART_TRIM/${NAME}_R1_filtered.fastq CROP:150 MINLEN:140
@@ -135,9 +138,9 @@ done
 ############################################################################################################################################################
 
 
-python3.6 ${GD}/g-d_algorithm_3.6.py -r ${RUN_ART} -g 0.99 -d 0.98 -m ${OUT}/ART_SIMULATION/04_ART_FILTERMAP_${NAME} -o ${OUT}/ART_SIMULATOR/art_${NAME}.csv -O ${OUT}/ART_SIMULATOR/genomic_regions_${NAME}.csv
+python3.6 ${GD}/g-d_algorithm_3.6.py -r ${RUN_ART} -g 0.99 -d 0.98 -m ${OUT}/ART_SIMULATION/04_ART_FILTERMAP_${NAME} -o ${OUT}/ART_SIMULATION/art_${NAME}.csv -O ${OUT}/ART_SIMULATOR/genomic_regions_${NAME}.csv
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-python3.6 ${GD}/g-d_algorithm_3.6.py -r ${RUN_ART} -g 0.99 -d 0.98 -m ${OUT}/ISS_SIMULATION/04_ISS_FILTERMAP_${NAME} -o ${OUT}/ISS_SIMULATOR/iss_${NAME}.csv -O ${OUT}/ISS_SIMULATOR/genomic_regions_${NAME}.csv
+python3.6 ${GD}/g-d_algorithm_3.6.py -r ${RUN_ISS} -g 0.99 -d 0.98 -m ${OUT}/ISS_SIMULATION/04_ISS_FILTERMAP_${NAME} -o ${OUT}/ISS_SIMULATION/iss_${NAME}.csv -O ${OUT}/ISS_SIMULATOR/genomic_regions_${NAME}.csv
 
